@@ -1,0 +1,9 @@
+# Arquivos enviados não vão para o GitHub
+uploads/*
+!uploads/.gitkeep
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc

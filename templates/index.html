@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Uploader</title>
+<style>
+  :root { --bg:#f5f6f8; --card:#fff; --text:#1d1f23; --muted:#6b7280; --accent:#4f46e5; --border:#e2e4e9; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#121316; --card:#1c1e23; --text:#eceef2; --muted:#9aa0ab; --border:#2c2f36; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, sans-serif; background:var(--bg); color:var(--text); }
+  main { max-width: 640px; margin: 0 auto; padding: 20px 16px 40px; }
+  h1 { font-size: 1.4rem; margin: 8px 0 16px; }
+  h2 { font-size: 1rem; margin: 28px 0 10px; color: var(--muted); font-weight: 600; }
+  #drop { border: 2px dashed var(--border); background: var(--card); border-radius: 14px;
+          padding: 36px 16px; text-align: center; cursor: pointer; transition: .15s; }
+  #drop.over { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--card)); }
+  #drop strong { color: var(--accent); }
+  #drop p { margin: 6px 0 0; color: var(--muted); font-size: .9rem; }
+  .item { background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+          padding: 10px 12px; margin-top: 8px; display: grid; gap: 6px; }
+  .item span.n { word-break: break-all; }
+  .item small { color: var(--muted); }
+  progress { width: 100%; height: 8px; accent-color: var(--accent); }
+  .row { display: flex; align-items: center; gap: 10px; }
+  .row a { flex: 1; color: var(--text); text-decoration: none; word-break: break-all; }
+  .row a:hover { color: var(--accent); }
+  button.del { border: none; background: none; color: #dc2626; font-size: 1.1rem; cursor: pointer; padding: 4px 8px; }
+  .empty { color: var(--muted); text-align: center; padding: 16px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>📤 Uploader</h1>
+
+  <div id="drop">
+    <strong>Toque para escolher arquivos</strong>
+    <p>ou arraste e solte aqui</p>
+    <input id="input" type="file" multiple hidden>
+  </div>
+
+  <div id="queue"></div>
+
+  <h2>Arquivos no computador</h2>
+  <div id="list"></div>
+</main>
+
+<script>
+const drop = document.getElementById('drop');
+const input = document.getElementById('input');
+const queue = document.getElementById('queue');
+const list = document.getElementById('list');
+
+drop.addEventListener('click', () => input.click());
+input.addEventListener('change', () => { sendFiles(input.files); input.value = ''; });
+['dragenter', 'dragover'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', ev => sendFiles(ev.dataTransfer.files));
+
+function sendFiles(files) { [...files].forEach(sendFile); }
+
+function sendFile(file) {
+  const row = document.createElement('div'); row.className = 'item';
+  const name = document.createElement('span'); name.className = 'n'; name.textContent = file.name;
+  const bar = document.createElement('progress'); bar.max = 100; bar.value = 0;
+  const status = document.createElement('small'); status.textContent = '0%';
+  row.append(name, bar, status);
+  queue.prepend(row);
+
+  const fd = new FormData();
+  fd.append('files', file);
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', '/upload');
+  xhr.upload.onprogress = e => {
+    if (e.lengthComputable) {
+      const p = Math.round(e.loaded / e.total * 100);
+      bar.value = p; status.textContent = p + '%';
+    }
+  };
+  xhr.onload = () => {
+    if (xhr.status === 200) { status.textContent = '✔ Enviado'; loadFiles(); }
+    else status.textContent = '✖ Erro ao enviar';
+  };
+  xhr.onerror = () => { status.textContent = '✖ Erro de rede'; };
+  xhr.send(fd);
+}
+
+function fmtSize(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1024 ** 2) return (b / 1024).toFixed(1) + ' KB';
+  if (b < 1024 ** 3) return (b / 1024 ** 2).toFixed(1) + ' MB';
+  return (b / 1024 ** 3).toFixed(2) + ' GB';
+}
+
+async function loadFiles() {
+  const res = await fetch('/files');
+  const files = await res.json();
+  list.replaceChildren();
+  if (!files.length) {
+    const e = document.createElement('div'); e.className = 'empty'; e.textContent = 'Nenhum arquivo ainda.';
+    list.append(e); return;
+  }
+  for (const f of files) {
+    const row = document.createElement('div'); row.className = 'item';
+    const line = document.createElement('div'); line.className = 'row';
+    const a = document.createElement('a');
+    a.href = '/download/' + encodeURIComponent(f.name); a.textContent = f.name;
+    const del = document.createElement('button'); del.className = 'del'; del.textContent = '🗑'; del.title = 'Apagar';
+    del.onclick = async () => {
+      if (!confirm('Apagar ' + f.name + '?')) return;
+      await fetch('/files/' + encodeURIComponent(f.name), { method: 'DELETE' });
+      loadFiles();
+    };
+    line.append(a, del);
+    const info = document.createElement('small');
+    info.textContent = fmtSize(f.size) + ' · ' + new Date(f.modified * 1000).toLocaleString('pt-BR');
+    row.append(line, info);
+    list.append(row);
+  }
+}
+loadFiles();
+</script>
+</body>
+</html>
