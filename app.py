@@ -1,4 +1,3 @@
-"""Uploader simples: envie arquivos do celular para o seu computador."""
 import os
 import socket
 
@@ -12,11 +11,11 @@ PORT = 8000
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 app = Flask(__name__)
+app.config["TEMPLATES_AUTO_RELOAD"] = True
 app.config["MAX_CONTENT_LENGTH"] = 2 * 1024**3  # limite de 2 GB por envio
 
 
 def unique_name(filename):
-    """Sanitiza o nome e evita sobrescrever arquivos existentes."""
     name = secure_filename(filename) or "arquivo"
     base, ext = os.path.splitext(name)
     candidate, i = name, 1
@@ -27,7 +26,7 @@ def unique_name(filename):
 
 
 def local_ip():
-    """Descobre o IP do computador na rede local."""
+    # Descobre IP
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         s.connect(("8.8.8.8", 80))

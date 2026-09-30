@@ -1,19 +1,24 @@
-# 📤 Uploader
+# File Uploader
 
-Envie arquivos do celular para o seu computador pela rede Wi-Fi. O computador é o servidor.
+Um sistema de upload de arquivos que transforma o computador em um servidor local. Com ele, você envia fotos, vídeos e documentos do celular para o PC (ou de um PC para outro) pelo navegador, usando apenas o Wi-Fi de casa. Não precisa de cabo, aplicativo nem serviço em nuvem.
 
-## Rodar
+## Funcionalidades
+ 
+- Envio de vários arquivos de uma vez
+- Barra de progresso individual para cada arquivo
+- Arrastar e soltar (no computador) ou tocar para escolher (no celular)
+- Lista dos arquivos salvos no computador, com download e exclusão
+- Interface responsiva, pensada para celular, com modo escuro automático
+- Limite de 2 GB por envio
 
-```bash
-pip install -r requirements.txt
-python app.py
-```
+## Tecnologias e ferramentas usadas
+ 
+Servidor - **Python 3** (Linguagem do back-end)
 
-Abra no celular o endereço que aparecer no terminal (ex.: `http://192.168.0.15:8000`).
-Os arquivos ficam na pasta `uploads/`.
+Framework web - **Flask** (Rotas HTTP e servidor)
 
-## Aviso de segurança
+Utilitários - **Werkzeug** - Limpar nomes de arquivo com segurança 
 
-Não tem senha. Use só em rede confiável (sua casa) e não exponha a porta 8000 para a internet.
+Front-end - **HTML, CSS e JavaScript puro** (Interface, sem frameworks nem bibliotecas externas)
 
-Guia completo (do zero até o GitHub): veja [GUIA.md](GUIA.md).
+Comunicação - **XMLHttpRequest** e **Fetch API** (Envio com progresso e leitura da lista)
